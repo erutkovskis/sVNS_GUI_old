@@ -30,11 +30,11 @@ frame_onoff.grid(row=0,column=4,padx=5,pady=5)
 
 # Define labels
     # Frame labels
-pw_prompt_lbl = tk.Label(master=frame_pw,text="Pulse width",height=10)
-pf_prompt_lbl = tk.Label(master=frame_pf,text="Pulse frequency",height=10)
-stimon_prompt_lbl = tk.Label(master=frame_stimon,text="Stimulation ON time",height=10)
-curampl_prompt_lbl = tk.Label(master=frame_curampl,text="Set current level",height=10)
-onoff_prompt_lbl = tk.Label(master=frame_onoff,text="Stimulation on/off",height=10)
+pw_prompt_lbl = tk.Label(master=frame_pw,text="Pulse width")
+pf_prompt_lbl = tk.Label(master=frame_pf,text="Pulse frequency")
+stimon_prompt_lbl = tk.Label(master=frame_stimon,text="Stimulation ON time")
+curampl_prompt_lbl = tk.Label(master=frame_curampl,text="Set current level")
+onoff_prompt_lbl = tk.Label(master=frame_onoff,text="Stimulation on/off")
     # Pulse widths
 PWs = range(50,4050,50)
     # Pulse frequencies
@@ -57,7 +57,8 @@ for i in range(16):
     for j in range(5):
 
         def PW_btn_press(x = PWs[k]):
-            '''Event handler to react to the button press with the deft argument of the button value'''
+            ''' Pulse width event handler to react to the button 
+            press with the deft argument of the button value'''
             return PW_button_send(x)
 
         PW_btn = tk.Button(
@@ -75,6 +76,8 @@ i = 0
 for i in range(2):
 
     def PF_btn_press(x = PFs[k]):
+        ''' Pulse frequency event handler to react to the button 
+            press with the deft argument of the button value'''
         return PF_button_send(x)
 
     PF_btn = tk.Button(
@@ -95,10 +98,10 @@ set_current_lvl_box = tk.Entry(
 )
 
 # Organise widgets in the window
-pw_prompt_lbl.grid(row=0,column=0)
-pf_prompt_lbl.grid(row=0,column=0)
+pw_prompt_lbl.grid(row=0,column=0,columnspan=5, sticky="nsew")
+pf_prompt_lbl.grid(row=0,column=0,columnspan=2, sticky="nsew")
 stimon_prompt_lbl.grid(row=0,column=0)
-curampl_prompt_lbl.grid(row=0,column=0)
+curampl_prompt_lbl.grid(row=0,column=0,columnspan=2, sticky="nsew")
 onoff_prompt_lbl.grid(row=0,column=0)
 set_current_lvl_box.grid(row=1,column=0)
 mA_lbl.grid(row=1,column=1)
