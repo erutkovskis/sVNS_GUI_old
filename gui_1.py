@@ -1,0 +1,111 @@
+import tkinter as tk
+import tkinter.ttk as ttk
+
+# Future button converters
+def PW_button_send(number):
+    '''Convert the button value to hex and prints on the terminal'''
+    hex_value = hex(number)
+    print(hex_value)
+
+def PF_button_send(number):
+    '''Convert the button value to hex and prints on the terminal'''
+    hex_value = hex(number)
+    print(hex_value)
+
+window = tk.Tk()
+
+# Define frames
+frame_pw = tk.Frame(relief=tk.RIDGE,borderwidth=5)
+frame_pf = tk.Frame(relief=tk.RIDGE,borderwidth=5)
+frame_stimon = tk.Frame(relief=tk.RIDGE,borderwidth=5)
+frame_curampl = tk.Frame(relief=tk.RIDGE,borderwidth=5)
+frame_onoff = tk.Frame(relief=tk.RIDGE,borderwidth=5)
+
+# Make frames as grid
+frame_pw.grid(row=0,column=0,padx=5,pady=5)
+frame_pf.grid(row=0,column=1,padx=5,pady=5)
+frame_stimon.grid(row=0,column=2,padx=5,pady=5)
+frame_curampl.grid(row=0,column=3,padx=5,pady=5)
+frame_onoff.grid(row=0,column=4,padx=5,pady=5)
+
+# Define labels
+    # Frame labels
+pw_prompt_lbl = tk.Label(master=frame_pw,text="Pulse width",height=10)
+pf_prompt_lbl = tk.Label(master=frame_pf,text="Pulse frequency",height=10)
+stimon_prompt_lbl = tk.Label(master=frame_stimon,text="Stimulation ON time",height=10)
+curampl_prompt_lbl = tk.Label(master=frame_curampl,text="Set current level",height=10)
+onoff_prompt_lbl = tk.Label(master=frame_onoff,text="Stimulation on/off",height=10)
+    # Pulse widths
+PWs = range(50,4050,50)
+    # Pulse frequencies
+PFs = [10, 20]
+    # Stimulation on times
+Stim_On_times = [5,10,20,30,60,120]
+    # time labels
+us_lbl = tk.Label(text="us")
+ms_lbl = tk.Label(text="ms")
+s_lbl = tk.Label(text="s")
+    # frequency label
+hz_lbl = tk.Label(text="Hz")
+    # current label
+uA_lbl = tk.Label(text="uA")
+mA_lbl = tk.Label(master=frame_curampl, text="mA")
+
+# Define and organise buttons
+k = 0
+for i in range(16):
+    for j in range(5):
+
+        def PW_btn_press(x = PWs[k]):
+            '''Event handler to react to the button press with the deft argument of the button value'''
+            return PW_button_send(x)
+
+        PW_btn = tk.Button(
+            master=frame_pw,
+            text=PWs[k],
+            bg="black",
+            fg="white",
+            command = PW_btn_press
+        ) 
+        PW_btn.grid(row=i+1,column=j)
+        k = k+1
+k = 0
+i = 0
+
+for i in range(2):
+
+    def PF_btn_press(x = PFs[k]):
+        return PF_button_send(x)
+
+    PF_btn = tk.Button(
+        master=frame_pf,
+        text=PFs[i],
+        bg="black",
+        fg="white",
+        command = PF_btn_press
+    )
+    PF_btn.grid(row = 1, column = i)
+    k = k + 1
+
+# Define entry fields
+set_current_lvl_box = tk.Entry(
+    master=frame_curampl,
+    bg="black",
+    fg="white",
+)
+
+# Organise widgets in the window
+pw_prompt_lbl.grid(row=0,column=0)
+pf_prompt_lbl.grid(row=0,column=0)
+stimon_prompt_lbl.grid(row=0,column=0)
+curampl_prompt_lbl.grid(row=0,column=0)
+onoff_prompt_lbl.grid(row=0,column=0)
+set_current_lvl_box.grid(row=1,column=0)
+mA_lbl.grid(row=1,column=1)
+#set_current_lvl_box.insert(0,"Input current level")
+
+set_current_lvl = set_current_lvl_box.get()
+
+window.mainloop()
+
+#print(set_current_level)
