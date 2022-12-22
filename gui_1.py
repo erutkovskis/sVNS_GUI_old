@@ -3,11 +3,17 @@ import tkinter.ttk as ttk
 import serial
 import time
 
-arduino = serial.Serial(port='COM5',baudrate=115200,timeout=0.1)
+#arduino = serial.Serial(port='COM5',baudrate=115200,timeout=0.1)
+
+# List of COM ports 
 
 window = tk.Tk()
+command_byte = []
 # Command to be sent to arduino for interpretation 
-command_byte = [None,None,None,None,None,None,None]
+i = 0
+for i in range(11):
+    command_byte.append(None)
+#command_byte = [None,None,None,None,None,None,None,None,None]    
 #command_byte = [0,0,0,0,0,0,0]
 # State bits to check if corresponding value has been added to the command byte
 PW_state_bit = 0
@@ -27,9 +33,9 @@ def PW_button_send(number):
 #    arduino.write(bytes(number,'utf-8'))
     global PW_state_bit
     global command_byte
-    time.sleep(0.05)
     if PW_state_bit == 0:
-        command_byte[0] = number
+        command_byte[0] = number / 50
+        command_byte[1] = 0
         PW_state_bit = 1
     # Update the command_byte label
     command_word_lbl["text"] = f"{command_byte}"
@@ -43,8 +49,13 @@ def PF_button_send(number):
     global command_byte
     time.sleep(0.05)
     if PF_state_bit == 0:
-        command_byte[1] = number
-        PF_state_bit = 1
+        if number == PFs[0]: # for 20 Hz timer reload byte is 23869 (0x5D3D, 0x5D = 93, 0x3D = 61) 
+            command_byte[2] = 93
+            command_byte[3] = 61
+            PF_state_bit = 1
+        if number == PFs[1]: # for 15 Hz timer reload byte is 9980 (0x26FC, 0x26 = 38, 0xFC = 252)
+            command_byte[2] = 38
+            command_byte[3] = 252
     # Update the command_byte label
     command_word_lbl["text"] = f"{command_byte}"
     
@@ -52,7 +63,10 @@ def T_on_button_send(number):
     global T_on_state_bit
     global command_byte
     if T_on_state_bit == 0:
-        command_byte[2] = number
+        for word in Stim_On_timer_vals[number]:
+            command_byte[4] = Stim_On_timer_vals[number][0]
+            command_byte[5] = Stim_On_timer_vals[number][1]
+            command_byte[6] = Stim_On_timer_vals[number][2]
         T_on_state_bit = 1
     # Update the command_byte label
     command_word_lbl["text"] = f"{command_byte}"
@@ -69,7 +83,7 @@ def onoff_button_send(number):
     global onoff_state_bit
     global command_byte
     if onoff_state_bit == 0:
-        command_byte[4] = number
+        command_byte[7] = number
         onoff_state_bit = 1
     # Update the command_byte label
     command_word_lbl["text"] = f"{command_byte}"
@@ -79,8 +93,10 @@ def get_current_value():
     global command_byte
     if curampl_state_bit == 0:
         # Is this integer or string? String -> Integer
-        set_current_lvl = int(set_current_lvl_box.get())
-        command_byte[3] = set_current_lvl
+        set_current_lvl = float(set_current_lvl_box.get())
+        step = 31.4375 # amount of the amplified current [uA] provided by 1 step (1 incremental bit) from the 8-bit IRef (4x [0,503] uA)
+        I_ref = round(set_current_lvl * 1000 / step)  # number of 8-bit levels to supply the required current 
+        command_byte[8] = I_ref - 1 # taking into account the 0th step
         curampl_state_bit = 1
     # Update the command_byte label
     command_word_lbl["text"] = f"{command_byte}"
@@ -89,7 +105,7 @@ def stim_mode_send(number):
     global stim_mode_state_bit
     global command_byte
     if stim_mode_state_bit == 0:
-        command_byte[5] = number
+        command_byte[9] = number
         stim_mode_state_bit = 1
     command_word_lbl["text"] = f"{command_byte}"
 
@@ -98,7 +114,7 @@ def get_channel_nr():
     global command_byte
     if channel_nr_state_bit == 0:
         channel_nr = int(channel_nr_box.get())
-        command_byte[6] = channel_nr
+        command_byte[10] = channel_nr
         channel_nr_state_bit = 1
     command_word_lbl["text"] = f"{command_byte}"
 
@@ -112,7 +128,9 @@ def send_command_word():
         print(command_byte)
         command_sent = 1
     command_word_lbl["text"] = f"{command_byte}"
-    arduino.write(bytes,(command_byte,'utf-8'))
+    time.sleep(0.05)
+    command_byte.append('\n')
+#    arduino.write(bytes,(command_byte,'utf-8'))
 
 def reset():
     global PW_state_bit
@@ -133,7 +151,10 @@ def reset():
     channel_nr_state_bit = 0
     command_sent = 0
 
-    command_byte = [None,None,None,None,None,None,None]
+    i = 0
+    command_byte = []
+    for i in range(11):
+        command_byte.append(None)
     #command_byte = [0,0,0,0,0,0,0]
     command_word_lbl["text"] = f"{command_byte}"
 
@@ -157,8 +178,8 @@ frame_command_word = tk.Frame(relief=tk.RIDGE,borderwidth=5)
 frame_pw.grid(row=0,column=0,padx=5,pady=5)
 frame_pf.grid(row=0,column=1,padx=5,pady=5)
 frame_stimon.grid(row=0,column=2,padx=5,pady=5)
-frame_curampl.grid(row=0,column=3,padx=5,pady=5)
-frame_onoff.grid(row=0,column=4,padx=5,pady=5)
+frame_onoff.grid(row=0,column=3,padx=5,pady=5)
+frame_curampl.grid(row=0,column=4,padx=5,pady=5)
 frame_stim_mode.grid(row=0,column=5,padx=5,pady=5)
 frame_channel_nr.grid(row=0,column=6,padx=5,pady=5)
 frame_serial_mon.grid(row=1,column=0,columnspan=5,padx=5,pady=5)
@@ -177,9 +198,17 @@ channel_nr_prompt_lbl = tk.Label(master=frame_channel_nr,text="Channel Number")
     # Pulse widths
 PWs = range(50,4050,50)
     # Pulse frequencies
-PFs = [10, 20]
+PFs = [15, 20]
     # Stimulation on times
 Stim_On_times = [5,10,20,30,60,120]
+Stim_On_timer_vals = {
+    5: [0,112,2],
+    10: [0,0,5],
+    20: [0,0,10],
+    30: [0,0,15],
+    60: [0,0,30],
+    120: [0,0,60]
+}
     # On/Off options
 onoff = [0, 1]
     # Stimulation mode options
