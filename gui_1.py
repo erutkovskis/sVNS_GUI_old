@@ -3,12 +3,18 @@ import tkinter.ttk as ttk
 import serial
 import time
 
-#arduino = serial.Serial(port='COM5',baudrate=115200,timeout=0.1)
+#arduino = serial.Serial(port='COM4',baudrate=115200,timeout=0.1)
+arduino = serial.Serial(port='COM5',baudrate=115200,timeout=0, writeTimeout=0) #ensure non-blocking
 
 # List of COM ports 
 
 window = tk.Tk()
 command_byte = []
+
+# make a scrollbar
+#scrollbar = tk.Scrollbar(window)
+#scrollbar.pack(side="right", fill="y")
+
 # Command to be sent to arduino for interpretation 
 i = 0
 for i in range(11):
@@ -25,7 +31,7 @@ stim_mode_state_bit = 0
 channel_nr_state_bit = 0
 command_sent = 0
 
-# Future button converters
+# Button function converters
 def PW_button_send(number):
     '''Convert the button value to hex and prints on the terminal'''
 #    hex_value = hex(number)
@@ -34,7 +40,7 @@ def PW_button_send(number):
     global PW_state_bit
     global command_byte
     if PW_state_bit == 0:
-        command_byte[0] = number / 50
+        command_byte[0] = round(number / 50)
         command_byte[1] = 0
         PW_state_bit = 1
     # Update the command_byte label
@@ -118,19 +124,33 @@ def get_channel_nr():
         channel_nr_state_bit = 1
     command_word_lbl["text"] = f"{command_byte}"
 
+# def ser_mon_display():
+# #    time.sleep(0.05)
+# #    print(arduino.readline())
+#     while arduino.in_waiting:
+#         data = arduino.readline()
+#         print(str(data))
+
 def send_command_word():
     """
     Simple test of the command word sending
     """
     global command_sent
     global command_byte
-    if command_sent == 0:
-        print(command_byte)
-        command_sent = 1
-    command_word_lbl["text"] = f"{command_byte}"
-    time.sleep(0.05)
-    command_byte.append('\n')
-#    arduino.write(bytes,(command_byte,'utf-8'))
+    # command_byte_str.insert(0,'<')
+    # command_byte_str.append('>')
+#    arduino.write(bytes,(command_byte[0],'utf-8'))
+    if (command_sent == 0):
+        command_word_lbl["text"] = f"{command_byte}"
+        command_byte_str = ','.join(str(x) for x in command_byte)
+        command_byte_str = '<' + command_byte_str
+        command_byte_str = command_byte_str + '>'
+        arduino.write(bytes(command_byte_str, encoding = 'utf-8'));
+        time.sleep(1);
+        print(command_byte_str);
+        command_sent = 1;
+    
+#    ser_mon_display()
 
 def reset():
     global PW_state_bit
@@ -158,12 +178,8 @@ def reset():
     #command_byte = [0,0,0,0,0,0,0]
     command_word_lbl["text"] = f"{command_byte}"
 
-def ser_mon_display():
-    time.sleep(0.05)
-#    print(arduino.readline())
-
 # Define frames
-frame_pw = tk.Frame(relief=tk.RIDGE,borderwidth=5)
+frame_pw = tk.Frame(height=10, relief=tk.RIDGE,borderwidth=5)
 frame_pf = tk.Frame(relief=tk.RIDGE,borderwidth=5)
 frame_stimon = tk.Frame(relief=tk.RIDGE,borderwidth=5)
 frame_curampl = tk.Frame(relief=tk.RIDGE,borderwidth=5)
@@ -182,10 +198,52 @@ frame_onoff.grid(row=0,column=3,padx=5,pady=5)
 frame_curampl.grid(row=0,column=4,padx=5,pady=5)
 frame_stim_mode.grid(row=0,column=5,padx=5,pady=5)
 frame_channel_nr.grid(row=0,column=6,padx=5,pady=5)
-frame_serial_mon.grid(row=1,column=0,columnspan=5,padx=5,pady=5)
-frame_command_word.grid(row=2,column=0,columnspan=5,padx=5,pady=5)
-frame_program.grid(row=3,column=3,padx=5,pady=5)
+#frame_serial_mon.grid(row=1,column=0,columnspan=5,padx=5,pady=5)
+frame_serial_mon.grid(row=1,column=0,padx=5,pady=5)
+#frame_command_word.grid(row=1,column=6,columnspan=5,padx=5,pady=5)
+frame_command_word.grid(row=1,column=1,columnspan=3,padx=5,pady=5)
+frame_program.grid(row=1,column=4,padx=5,pady=5)
 
+# Make a text box for the serial output
+
+log = tk.Text(frame_serial_mon,width=15,height=5,takefocus=0)
+log.grid(row=0,column=0)
+scrollbar = tk.Scrollbar(frame_serial_mon)
+scrollbar.grid(row=0,column=1)
+# attach text box to scrollbar
+log.config(yscrollcommand=scrollbar.set)
+scrollbar.config(command=log.yview)
+#make our own buffer
+#useful for parsing commands
+#Serial.readline seems unreliable at times too
+serBuffer = ""
+
+def readSerial():
+    while True:
+        c = arduino.read().decode('ascii') # attempt to read a character from Serial
+        
+        #was anything read?
+        if len(c) == 0:
+            break
+        
+        # get the buffer from outside of this function
+        global serBuffer
+        
+        # check if character is a delimeter
+        if c == '\r':
+            c = '' # don't want returns. chuck it
+            
+        if c == '\n':
+            serBuffer += "\n" # add the newline to the buffer
+            
+            #add the line to the TOP of the log
+            log.insert('0.0', serBuffer)
+            serBuffer = "" # empty the buffer
+        else:
+            serBuffer += c # add to the buffer
+    frame_serial_mon.after(10, readSerial)
+
+frame_serial_mon.after(100,readSerial)
 # Define labels
     # Frame labels
 pw_prompt_lbl = tk.Label(master=frame_pw,text="Pulse width")
@@ -224,6 +282,7 @@ uA_lbl = tk.Label(text="uA")
 mA_lbl = tk.Label(master=frame_curampl, text="mA")
     # Serial monitor label
 serial_mon_lbl = tk.Label(master=frame_serial_mon,text="Serial Monitor")
+
 command_word_lbl = tk.Label(master=frame_command_word,text="")
 command_word_lbl["text"] = f"{command_byte}"
 
@@ -352,7 +411,7 @@ channel_nr_prompt_lbl.grid(row=0,column=0,columnspan=2,sticky = "nsew")
 channel_nr_box.grid(row=1,column=0)
 mA_lbl.grid(row=1,column=1)
 stim_mode_prompt_lbl.grid(row = 0, column = 0, columnspan=2, sticky = "nsew")
-serial_mon_lbl.grid(row=0,column=0)
+serial_mon_lbl.grid(row=1,column=0)
 #set_current_lvl_box.insert(0,"Input current level")
 command_word_lbl.grid(row = 2, column = 0)
 
