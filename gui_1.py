@@ -30,6 +30,7 @@ onoff_state_bit = 0
 stim_mode_state_bit = 0
 channel_nr_state_bit = 0
 command_sent = 0
+chksum_python = 0
 
 # Button function converters
 def PW_button_send(number):
@@ -40,8 +41,8 @@ def PW_button_send(number):
     global PW_state_bit
     global command_byte
     if PW_state_bit == 0:
-        command_byte[0] = round(number / 50)
-        command_byte[1] = 0
+        command_byte[0] = 0
+        command_byte[1] = round(number / 50)
         PW_state_bit = 1
     # Update the command_byte label
     command_word_lbl["text"] = f"{command_byte}"
@@ -55,11 +56,11 @@ def PF_button_send(number):
     global command_byte
     time.sleep(0.05)
     if PF_state_bit == 0:
-        if number == PFs[0]: # for 20 Hz timer reload byte is 23869 (0x5D3D, 0x5D = 93, 0x3D = 61) 
+        if number == PFs[1]: # for 20 Hz timer reload byte is 23869 (0x5D3D, 0x5D = 93, 0x3D = 61) 
             command_byte[2] = 93
             command_byte[3] = 61
             PF_state_bit = 1
-        if number == PFs[1]: # for 15 Hz timer reload byte is 9980 (0x26FC, 0x26 = 38, 0xFC = 252)
+        if number == PFs[0]: # for 15 Hz timer reload byte is 9980 (0x26FC, 0x26 = 38, 0xFC = 252)
             command_byte[2] = 38
             command_byte[3] = 252
     # Update the command_byte label
@@ -137,18 +138,18 @@ def send_command_word():
     """
     global command_sent
     global command_byte
-    # command_byte_str.insert(0,'<')
-    # command_byte_str.append('>')
-#    arduino.write(bytes,(command_byte[0],'utf-8'))
+
     if (command_sent == 0):
+        chksum_python = ((chksum_python + x) for x in command_byte) # checksum to check against after writing to the serial interface
         command_word_lbl["text"] = f"{command_byte}"
         command_byte_str = ','.join(str(x) for x in command_byte)
         command_byte_str = '<' + command_byte_str
         command_byte_str = command_byte_str + '>'
-        arduino.write(bytes(command_byte_str, encoding = 'utf-8'));
-        time.sleep(1);
-        print(command_byte_str);
-        command_sent = 1;
+        arduino.write(bytes(command_byte_str, encoding = 'utf-8'))
+        time.sleep(1)
+        print(command_byte_str)
+        print(chksum_python)
+        command_sent = 1
     
 #    ser_mon_display()
 
@@ -170,6 +171,7 @@ def reset():
     stim_mode_state_bit = 0
     channel_nr_state_bit = 0
     command_sent = 0
+    chksum_python = 0
 
     i = 0
     command_byte = []
@@ -270,7 +272,7 @@ Stim_On_timer_vals = {
     # On/Off options
 onoff = [0, 1]
     # Stimulation mode options
-stim_modes = [0, 1]
+stim_modes = [1, 2]
     # time labels
 us_lbl = tk.Label(text="us")
 ms_lbl = tk.Label(text="ms")
